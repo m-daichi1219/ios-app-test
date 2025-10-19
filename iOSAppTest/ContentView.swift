@@ -12,7 +12,6 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var items: [Item]
 
-    var tb = 1
     var body: some View {
         NavigationSplitView {
             List {
