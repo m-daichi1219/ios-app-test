@@ -5,11 +5,11 @@
 //  Created by daichi on 2025/10/19.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 @main
-struct iOSAppTestApp: App {
+struct IOSAppTestApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
