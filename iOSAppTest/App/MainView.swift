@@ -39,6 +39,7 @@ struct MainView: View {
             if isMenuOpen {
                 Color.black.opacity(0.2)
                     .ignoresSafeArea()
+                    .accessibilityIdentifier("overlay")
                     .onTapGesture {
                         withAnimation(.easeInOut) {
                             isMenuOpen.toggle()
