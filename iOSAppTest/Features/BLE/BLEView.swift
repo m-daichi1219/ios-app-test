@@ -1,16 +1,14 @@
 import CoreBluetooth
 import SwiftUI
 
+// TODO: すでに許可済みのケース
 private final class BLEPrompt: NSObject, CBCentralManagerDelegate {
     private var central: CBCentralManager?
-    func request() {
+    func start() {
         central = CBCentralManager(delegate: self, queue: nil)
-        // stateがpoweredOnになったらスキャン開始 → 初回にBluetoothの許可ダイアログ
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+        // poweredOn後にスキャン開始（初回はここで権限の確認）
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             self.central?.scanForPeripherals(withServices: nil)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                self.central?.stopScan()
-            }
         }
     }
 
@@ -18,6 +16,7 @@ private final class BLEPrompt: NSObject, CBCentralManagerDelegate {
 }
 
 struct BLEView: View {
+    @State private var showDeniedAlert = false
     private let prompt = BLEPrompt()
 
     var body: some View {
@@ -27,9 +26,20 @@ struct BLEView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             Spacer()
-            Button("Bluetoothの権限をリクエスト") {
-                prompt.request()
+            Button("Bluetoothを確認/開始") {
+                let auth = CBManager.authorization
+                if auth == .denied || auth == .restricted {
+                    showDeniedAlert = true
+                } else {
+                    prompt.start()
+                }
             }
+        }
+        .alert("Bluetoothが許可されていません", isPresented: $showDeniedAlert) {
+            Button("設定を開く") { AppSettings.open() }
+            Button("キャンセル", role: .cancel) {}
+        } message: {
+            Text("設定 > プライバシーとセキュリティ > Bluetooth で許可に変更してください。")
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .padding()

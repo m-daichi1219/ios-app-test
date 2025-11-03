@@ -1,6 +1,7 @@
 import CoreMotion
 import SwiftUI
 
+// TODO: すでに許可済みのケース
 private final class MotionPrompt {
     private let activityManager = CMMotionActivityManager()
     func request() {
@@ -10,6 +11,7 @@ private final class MotionPrompt {
 }
 
 struct MotionView: View {
+    @State private var showDeniedAlert = false
     private let prompt = MotionPrompt()
 
     var body: some View {
@@ -19,9 +21,21 @@ struct MotionView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             Spacer()
-            Button("モーションの権限をリクエスト") {
-                prompt.request()
+            Button("モーションを確認/要求") {
+                let status = CMMotionActivityManager.authorizationStatus()
+                if status == .denied || status == .restricted {
+                    showDeniedAlert = true
+                } else {
+                    prompt.request()
+                }
             }
+            // ...existing code...
+        }
+        .alert("モーションが許可されていません", isPresented: $showDeniedAlert) {
+            Button("設定を開く") { AppSettings.open() }
+            Button("キャンセル", role: .cancel) {}
+        } message: {
+            Text("設定 > プライバシーとセキュリティ > モーションとフィットネス で許可に変更してください。")
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .padding()
