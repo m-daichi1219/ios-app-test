@@ -29,9 +29,22 @@
 		424988702EA52B9E0034D181 /* iOSAppTestUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = iOSAppTestUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		4254946B2EB8AC2D003BD880 /* Exceptions for "iOSAppTest" folder in "iOSAppTest" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 424988552EA52B9D0034D181 /* iOSAppTest */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		424988582EA52B9D0034D181 /* iOSAppTest */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				4254946B2EB8AC2D003BD880 /* Exceptions for "iOSAppTest" folder in "iOSAppTest" target */,
+			);
 			path = iOSAppTest;
 			sourceTree = "<group>";
 		};
@@ -428,6 +441,8 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = iOSAppTest/Info.plist;
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Bluetoothデバイスと通信するために使用します。";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "現在地を取得して周辺情報を提供します。";
 				INFOPLIST_KEY_NSMotionUsageDescription = "モーションデータを使用してアクティビティを解析します。";
@@ -471,6 +486,8 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = iOSAppTest/Info.plist;
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Bluetoothデバイスと通信するために使用します。";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "現在地を取得して周辺情報を提供します。";
 				INFOPLIST_KEY_NSMotionUsageDescription = "モーションデータを使用してアクティビティを解析します。";
