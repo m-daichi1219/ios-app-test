@@ -11,34 +11,149 @@ private final class MotionPrompt {
 }
 
 struct MotionView: View {
-    @State private var showDeniedAlert = false
-    private let prompt = MotionPrompt()
+    // MARK: - Properties
+
+    @StateObject private var viewModel = MotionViewModel(
+        motionService: CoreMotionService()
+    )
+    /// センサー非対応デバイスのアラート表示状態
+    @State private var showUnavailableAlert = false
+
+    // MARK: - Body
 
     var body: some View {
-        VStack(spacing: 12) {
-            Text("Motion サンプル").font(.title3).bold()
-            Text("TODO: CoreMotion")
+        VStack(spacing: 16) {
+            // タイトル
+            Text("モーション計測")
+                .font(.title2)
+                .bold()
+
+            // 状態メッセージ
+            Text(viewModel.statusMessage)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-            Spacer()
-            Button("モーションを確認/要求") {
-                let status = CMMotionActivityManager.authorizationStatus()
-                if status == .denied || status == .restricted {
-                    showDeniedAlert = true
-                } else {
-                    prompt.request()
-                }
+
+            // データ件数表示
+            Text("記録件数: \(viewModel.recordedCount)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            // 開始/停止ボタン
+            Button {
+                handleRecordingToggle()
+            } label: {
+                Text(viewModel.isRecording ? "停止" : "開始")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(viewModel.isRecording ? Color.red : Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
             }
-            // ...existing code...
+            .padding(.horizontal)
+
+            // 最新データのリスト表示（最新10件）
+            List(viewModel.displayMotions) { data in
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("📱 #\(viewModel.displayMotions.firstIndex(where: { $0.id == data.id })! + 1)")
+                            .font(.headline)
+                        Spacer()
+                        Text(data.date, formatter: timeFormatter)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Divider()
+
+                    Group {
+                        HStack {
+                            Text("🧭 姿勢（Attitude）")
+                                .font(.subheadline)
+                                .bold()
+                            Spacer()
+                        }
+                        Text("Roll (横回転): \(data.toDegrees(data.roll), specifier: "%.1f")°")
+                        Text("Pitch (縦回転): \(data.toDegrees(data.pitch), specifier: "%.1f")°")
+                        Text("Yaw (方位): \(data.toDegrees(data.yaw), specifier: "%.1f")°")
+                    }
+                    .font(.caption)
+
+                    Divider()
+
+                    Group {
+                        HStack {
+                            Text("📍 ユーザー加速度（重力除く）")
+                                .font(.subheadline)
+                                .bold()
+                            Spacer()
+                        }
+                        Text("X: \(data.userAccelerationX, specifier: "%.3f") G")
+                        Text("Y: \(data.userAccelerationY, specifier: "%.3f") G")
+                        Text("Z: \(data.userAccelerationZ, specifier: "%.3f") G")
+                    }
+                    .font(.caption)
+
+                    Divider()
+
+                    // 加速度の強さ（ベクトルの大きさ）
+                    let magnitude = sqrt(
+                        data.userAccelerationX * data.userAccelerationX +
+                            data.userAccelerationY * data.userAccelerationY +
+                            data.userAccelerationZ * data.userAccelerationZ
+                    )
+                    HStack {
+                        Text("加速度の強さ:")
+                            .font(.caption)
+                            .bold()
+                        Text("\(magnitude, specifier: "%.3f") G")
+                            .font(.caption)
+                        Spacer()
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+            .listStyle(.plain)
+
+            Spacer()
         }
-        .alert("モーションが許可されていません", isPresented: $showDeniedAlert) {
-            Button("設定を開く") { AppSettings.open() }
-            Button("キャンセル", role: .cancel) {}
-        } message: {
-            Text("設定 > プライバシーとセキュリティ > モーションとフィットネス で許可に変更してください。")
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .padding()
-        .background(Color(.systemBackground))
+        .alert("センサーが利用できません", isPresented: $showUnavailableAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("このデバイスはモーションセンサーに対応していません。実機で試してください。")
+        }
     }
+
+    // MARK: - Private Methods
+
+    /// 開始/停止ボタンがタップされたときの処理
+    private func handleRecordingToggle() {
+        // 開始時にセンサー対応をチェック
+        if !viewModel.isRecording {
+            let service = CoreMotionService()
+            guard service.isDeviceMotionAvailable else {
+                showUnavailableAlert = true
+                return
+            }
+        }
+
+        // 計測開始/停止をトグル
+        viewModel.toggleRecording()
+    }
+
+    // MARK: - Formatter
+
+    /// 日時のフォーマッター（時刻表示用）
+    private var timeFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm:ss.SSS"
+        return formatter
+    }
+}
+
+// MARK: - Preview
+
+#Preview {
+    MotionView()
 }
