@@ -134,11 +134,70 @@ final class GPSViewModel: ObservableObject {
         recordedLocations.append(location) // 全データを蓄積
         recordedCount = recordedLocations.count
 
+        // コンソールに詳細データを出力（デバッグ用）
+        printLocationDetail(location, index: recordedCount)
+
         // 画面表示用に最新10件のみ保持（全件表示すると重い）
         let displayData = LocationDisplayData(location: location)
         displayLocations.append(displayData)
         if displayLocations.count > 10 {
             displayLocations.removeFirst() // 古いものを削除
+        }
+    }
+
+    // MARK: - DEBUG FUNC
+
+    /// 位置情報の詳細をコンソールに出力
+    private func printLocationDetail(_ location: CLLocation, index: Int) {
+        print("""
+
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        📍 位置情報 #\(index)
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        🕐 取得日時: \(formatDate(location.timestamp))
+
+        📌 座標
+           緯度 (latitude):  \(location.coordinate.latitude)°
+           経度 (longitude): \(location.coordinate.longitude)°
+
+        📏 高度・速度
+           高度 (altitude):      \(location.altitude) m
+           速度 (speed):          \(location.speed) m/s (\(location.speed * 3.6) km/h)
+           進行方向 (course):     \(location.course)°
+
+        🎯 精度
+           水平精度 (horizontalAccuracy): \(location.horizontalAccuracy) m
+           垂直精度 (verticalAccuracy):   \(location.verticalAccuracy) m
+           \(accuracyDescription(location.horizontalAccuracy))
+
+        🌐 その他
+           床 (floor):              \(location.floor?.level ?? 0) 階
+           ソース (sourceInformation): \(String(describing: location.sourceInformation))
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        """)
+    }
+
+    /// 日時フォーマット
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
+        formatter.locale = Locale(identifier: "ja_JP")
+        return formatter.string(from: date)
+    }
+
+    /// 精度の説明
+    private func accuracyDescription(_ accuracy: Double) -> String {
+        if accuracy < 0 {
+            return "⚠️ 精度情報なし（無効な値）"
+        } else if accuracy < 10 {
+            return "✅ 非常に高精度（10m未満）"
+        } else if accuracy < 50 {
+            return "✅ 高精度（50m未満）"
+        } else if accuracy < 100 {
+            return "⚠️ 中精度（100m未満）"
+        } else {
+            return "❌ 低精度（100m以上）"
         }
     }
 }
