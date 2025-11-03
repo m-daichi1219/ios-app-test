@@ -1,6 +1,7 @@
 import Combine
 import CoreLocation
 import Foundation
+import UIKit
 
 /// GPS 計測の状態を管理する ViewModel
 /// @MainActor: すべてのプロパティ/メソッドがメインスレッドで実行される（UI更新の安全性）
@@ -31,6 +32,12 @@ final class GPSViewModel: ObservableObject {
     /// Combine の購読を保持する箱（deinit 時に自動キャンセル）
     private var cancellables = Set<AnyCancellable>()
 
+    /// 自動停止用タイマー
+    private var autoStopTimer: Timer?
+
+    /// 最大計測時間（秒）
+    private let maxRecordingDurationSec: TimeInterval = 10
+
     // MARK: - Lifecycle
 
     /// 初期化（依存性注入 = DI）
@@ -38,6 +45,11 @@ final class GPSViewModel: ObservableObject {
     init(locationService: LocationService) {
         self.locationService = locationService
         setupBindings() // Combine でデータの流れを接続
+        setupLifecycleObservers()
+    }
+
+    deinit {
+        autoStopTimer?.invalidate()
     }
 
     // MARK: - Public Methods（View から呼ばれる）
@@ -71,6 +83,22 @@ final class GPSViewModel: ObservableObject {
             .store(in: &cancellables)
     }
 
+    /// アプリのライフサイクルを監視
+    private func setupLifecycleObservers() {
+        // アプリがバックグランドに移行したら自動停止
+        NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)
+            .sink { [weak self] _ in self?.handleDidEnterBackground() }
+            .store(in: &cancellables)
+    }
+
+    /// バックグランド移行時の処理
+    private func handleDidEnterBackground() {
+        guard isRecording else { return }
+
+        print("バックグラウンドに移行したため、計測を自動停止します")
+        stopRecording(reason: "バックグラウンド移行により自動停止")
+    }
+
     /// 計測開始
     private func startRecording() {
         // 権限チェック
@@ -88,31 +116,58 @@ final class GPSViewModel: ObservableObject {
         isRecording = true
         statusMessage = "計測中..."
         locationService.startUpdating() // 位置情報の取得開始
+
+        startAutoStopTimer()
+    }
+
+    /// 自動停止タイマーを開始
+    private func startAutoStopTimer() {
+        // 既存のタイマーがあれば停止
+        autoStopTimer?.invalidate()
+
+        // 規定の時間で自動停止
+        autoStopTimer = Timer.scheduledTimer(withTimeInterval: maxRecordingDurationSec, repeats: false) { [weak self] _ in
+            self?.handleAutoStop()
+        }
+    }
+
+    private func handleAutoStop() {
+        guard isRecording else { return }
+
+        print("計測を自動停止します")
+        stopRecording(reason: "時間経過により自動停止")
     }
 
     /// 計測停止
-    private func stopRecording() {
+    private func stopRecording(reason: String? = nil) {
         isRecording = false
-        locationService.stopUpdating() // 位置情報の取得停止
+        locationService.stopUpdating()
+
+        // タイマーを停止
+        autoStopTimer?.invalidate()
+        autoStopTimer = nil
 
         guard !recordedLocations.isEmpty else {
-            statusMessage = "データがありません"
+            statusMessage = reason ?? "データがありません"
             return
         }
 
         Task {
-            await exportToCSV()
+            await exportToCSV(reason: reason)
         }
     }
 
     /// CSV出力（非同期）
-    private func exportToCSV() async {
+    private func exportToCSV(reason: String? = nil) async {
         do {
             // CSVExporter で保存（throws なので try で呼ぶ）
             let fileURL = try CSVExporter.exportLocations(recordedLocations)
 
-            // 成功メッセージ
-            statusMessage = "保存しました（\(recordedLocations.count)件）"
+            if let reason {
+                statusMessage = "\(reason)\n保存しました（\(recordedLocations.count)件）"
+            } else {
+                statusMessage = "保存しました（\(recordedLocations.count)件）"
+            }
 
             // ファイルパスをコンソールに出力（Xcode のデバッグエリアで確認）
             print("CSV保存成功: \(fileURL.path)")
