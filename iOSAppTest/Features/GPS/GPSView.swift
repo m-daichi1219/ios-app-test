@@ -6,7 +6,7 @@ private final class LocationPrompt: NSObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     func request() {
         manager.delegate = self
-        let status = CLLocationManager.authorizationStatus()
+        let status = manager.authorizationStatus
         switch status {
         case .notDetermined:
             manager.requestWhenInUseAuthorization()
@@ -31,7 +31,7 @@ struct GPSView: View {
                 .foregroundStyle(.secondary)
             Spacer()
             Button("位置情報の権限を確認/要求") {
-                let status = CLLocationManager.authorizationStatus()
+                let status = CLLocationManager().authorizationStatus
                 if status == .denied || status == .restricted {
                     showDeniedAlert = true
                 } else {
